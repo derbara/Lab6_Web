@@ -1,0 +1,158 @@
+python -m flask shell 
+
+посмотреть пользователей
+from models import db, User
+users = db.session.execute(db.select(User)).scalars().all()
+for u in users:
+    print(u.id, u.login, u.full_name)
+
+либо [(u.id, u.login) for u in users]
+
+добавить пользователей
+from models import db, User
+u = User(first_name='Ярослава', last_name='Комар', login='yaroslava')
+u.set_password('Yasya2006')
+db.session.add(u)
+db.session.commit()
+
+from models import db, User
+u = User(first_name='Алексей', last_name='Игнатов', login='alex222')
+u.set_password('alex222')
+db.session.add(u)
+db.session.commit()
+
+проверить пароль
+u = db.session.get(User, 1)
+u.check_password('123')   # True / False
+
+посмотреть курсы
+from models import Course
+courses = db.session.execute(db.select(Course)).scalars().all()
+for c in courses:
+    print(c.id, c.name)
+
+добавить отзыв
+from models import db, Review, User, Course
+review = Review(
+    rating=5,
+    text="Гагага",
+    user_id=6,
+    course_id=1
+)
+db.session.add(review)
+
+обновить рейтинг курса
+course = db.session.get(Course, 1)
+course.rating_sum += 5
+course.rating_num += 1
+db.session.commit()
+
+посмотреть отзывы 
+from models import Review
+reviews = db.session.execute(db.select(Review)).scalars().all()
+for r in reviews:
+    print(r.id, r.text, r.rating, r.user_id, r.course_id)
+
+отзывы конкретного курса
+db.session.execute(
+    db.select(Review).filter_by(course_id=1)
+).scalars().all()
+
+удалить отзыв
+r = db.session.get(Review, 1)
+db.session.delete(r)
+db.session.commit()
+
+изменить отзыв
+r = db.session.get(Review, 1)
+r.text = "Новый текст"
+r.rating = 4
+db.session.commit()
+
+быстро создать много отзывов
+users = db.session.execute(db.select(User)).scalars().all()
+course = db.session.get(Course, 1)
+for i in range(5):
+    r = Review(
+        rating=i % 6,
+        text=f"Отзыв {i}",
+        user_id=users[i % len(users)].id,
+        course_id=course.id
+    )
+    db.session.add(r)
+    course.rating_sum += r.rating
+    course.rating_num += 1
+db.session.commit()
+
+посмотреть всех пользователей
+db.session.execute(db.select(User)).scalars().all()
+по айди 
+db.session.get(User, 1)
+по логину
+db.session.scalar(db.select(User).filter_by(login='anna'))
+
+изменить пользователя
+u = db.session.get(User, 1)
+u.first_name = "Петя"
+db.session.commit()
+
+удалить пользователя 
+u = db.session.get(User, 1)
+db.session.delete(u)
+db.session.commit()
+
+сортировка 
+db.select(Review).order_by(Review.rating.desc())
+db.select(Review).order_by(Review.created_at.desc())
+
+связи
+review.user
+review.course
+course.reviews
+
+
+
+sqlite3 project.db
+.tables  таблицы
+SELECT * FROM users; пользователи
+SELECT id, login, first_name, last_name FROM users;
+SELECT * FROM courses; курсы
+SELECT * FROM reviews WHERE course_id = 1; отзывы
+
+INSERT INTO reviews (rating, text, created_at, course_id, user_id)
+VALUES (7, 'Отличный курс!', datetime('now'), 1, 2);  добавить отзыв
+
+UPDATE courses
+SET rating_sum = rating_sum + 5,
+    rating_num = rating_num + 1
+WHERE id = 1;   обновить рейтинг курса
+
+UPDATE reviews
+SET text = 'Новый текст', rating = 4
+WHERE id = 1; изменить отзыв
+
+SELECT * FROM reviews
+LIMIT 5 OFFSET 0;  пагинация
+
+SELECT reviews.text, reviews.rating, users.login
+FROM reviews
+JOIN users ON reviews.user_id = users.id;
+
+
+
+flask db migrate -m "update"
+flask db upgrade изменение миграций
+
+
+from models import db, User
+
+u = User(
+    first_name='Елена',
+    last_name='Смирнова',
+    login='elena'
+)
+
+u.set_password('12345')
+
+db.session.add(u)
+db.session.commit()
